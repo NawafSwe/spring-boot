@@ -60,7 +60,8 @@ public class EmployeeController {
      **/
     @GetMapping("/employees")
     CollectionModel<EntityModel<Employee>> all() {
-
+//The code is, again, almost the same, however you get to replace all that EntityModel<Employee> creation logic with map(assembler::toModel). Thanks to Java 8 method references, it’s super easy to plug it in and simplify your controller.
+//A key design goal of Spring HATEOAS is to make it easier to do The Right Thing™. In this scenario: adding hypermedia to your service without hard coding a thing.
         List<EntityModel<Employee>> employees = repository.findAll().stream()
                 .map(assembler::toModel)
                 .collect(Collectors.toList());
