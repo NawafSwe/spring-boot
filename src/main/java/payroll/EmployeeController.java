@@ -25,10 +25,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 public class EmployeeController {
     private final EmployeeRepository repository;
+    private final EmployeeModelAssembler assembler;
 
     //An EmployeeRepository is injected by constructor into the controller.
-    public EmployeeController(EmployeeRepository repository) {
+    //inject the EmployeeAssembler
+    public EmployeeController(EmployeeRepository repository, EmployeeModelAssembler assembler) {
+
         this.repository = repository;
+        this.assembler = assembler;
     }
 
     // Aggregate root
@@ -42,26 +46,24 @@ public class EmployeeController {
     // ------------------------- //
 
     //  Getting an aggregate root resource
+
     /**
      * CollectionModel<> is another Spring HATEOAS container; it’s aimed at encapsulating collections of resources—instead of a single resource entity, like EntityModel<> from earlier. CollectionModel<>, too, lets you include links.
-     *
+     * <p>
      * Don’t let that first statement slip by. What does "encapsulating collections" mean? Collections of employees?
-     *
+     * <p>
      * Not quite.
-     *
+     * <p>
      * Since we’re talking REST, it should encapsulate collections of employee resources.
-     *
+     * <p>
      * That’s why you fetch all the employees, but then transform them into a list of EntityModel<Employee> objects. (Thanks Java 8 Streams!)
-     * **/
+     **/
     @GetMapping("/employees")
     CollectionModel<EntityModel<Employee>> all() {
 
         List<EntityModel<Employee>> employees = repository.findAll().stream()
-                .map(employee -> EntityModel.of(employee,
-                        linkTo(methodOn(EmployeeController.class).one(employee.getId())).withSelfRel(),
-                        linkTo(methodOn(EmployeeController.class).all()).withRel("employees")))
+                .map(assembler::toModel)
                 .collect(Collectors.toList());
-
         return CollectionModel.of(employees, linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
 
@@ -88,9 +90,7 @@ public class EmployeeController {
         Employee employee = repository.findById(id) //
                 .orElseThrow(() -> new EmployeeNotFoundException(id));
 
-        return EntityModel.of(employee, //
-                linkTo(methodOn(EmployeeController.class).one(id)).withSelfRel(),
-                linkTo(methodOn(EmployeeController.class).all()).withRel("employees"));
+        return assembler.toModel(employee);
     }
 
     @PutMapping("/employees/{id}")
