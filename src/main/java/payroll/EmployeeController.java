@@ -3,8 +3,6 @@ package payroll;
 // Instead, we can focus on actions:
 
 import java.util.List;
-import java.util.Optional;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,10 +11,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * @RestController indicates that the data returned by each method will be written straight into
+ * the response body instead of rendering a template.
+ * **/
 @RestController
 public class EmployeeController {
     private final EmployeeRepository repository;
-
+    //An EmployeeRepository is injected by constructor into the controller.
     public EmployeeController(EmployeeRepository repository) {
         this.repository = repository;
     }
