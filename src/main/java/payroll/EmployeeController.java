@@ -94,6 +94,12 @@ public class EmployeeController {
         return assembler.toModel(employee);
     }
 
+    /*
+     this is whole replace for obj
+     if value did not exist within the request body will cause an error
+     try to use optionals or other solution like checking which data is exists  within the body
+    */
+
     @PutMapping("/employees/{id}")
     Employee updatedEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id) {
         return repository.findById(id)
