@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -68,15 +70,35 @@ public class EmployeeController {
         return CollectionModel.of(employees, linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
 
-    //posting new employee
-    @PostMapping("/employees")
-    Employee newEmployee(@RequestBody Employee newEmployee) {
-        return repository.save(newEmployee);
-    }
+//    //posting new employee
+//    @PostMapping("/employees")
+//    Employee newEmployee(@RequestBody Employee newEmployee) {
+//        return repository.save(newEmployee);
+//    }
+//
+//
 
-    //get single employee
+    //    Another step in the right direction involves ensuring that each of your REST methods returns a proper response. Update the POST method like this:
+//
+//    POST that handles "old" and "new" client requests where above code is old endpoint
+    @PostMapping("/employees")
+    ResponseEntity<?> newEmployee(@RequestBody Employee employee) {
+        EntityModel<Employee> entityModel = assembler.toModel(repository.save(employee));
+        return ResponseEntity
+                .created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(entityModel);
+    }
+// above , postMapping ---> The new Employee object is saved as before. But the resulting object is wrapped using the EmployeeModelAssembler.
+//
+//Spring MVC’s ResponseEntity is used to create an HTTP 201 Created status message. This type of response typically includes a Location response header, and we use the URI derived from the model’s self-related link.
+//
+//Additionally, return the model-based version of the saved object.
+//
+//With these tweaks in place, you can use the same endpoint to create a new employee resource, and use the legacy name field
+
 
     /**
+     * get single employee
      * This is very similar to what we had before, but a few things have changed:
      * <p>
      * The return type of the method has changed from Employee to EntityModel<Employee>. EntityModel<T> is a generic container from Spring HATEOAS that includes not only the data but a collection of links.
@@ -104,9 +126,10 @@ public class EmployeeController {
     Employee updatedEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id) {
         return repository.findById(id)
                 .map(employee -> {
-                    employee.setName(updatedEmployee.name);
-                    employee.setRole(updatedEmployee.role);
-                    employee.setId(updatedEmployee.id);
+                    //setting employee name
+                    employee.setName(updatedEmployee.getFirstName() + " " + updatedEmployee.getLastName());
+                    employee.setRole(updatedEmployee.getRole());
+                    employee.setId(updatedEmployee.getId());
                     return repository.save(employee);
                 })
                 .orElseGet(() -> {
