@@ -122,24 +122,58 @@ public class EmployeeController {
      try to use optionals or other solution like checking which data is exists  within the body
     */
 
+    // old end point
+//    @PutMapping("/employees/{id}")
+//    Employee updatedEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id) {
+//        return repository.findById(id)
+//                .map(employee -> {
+//                    //setting employee name
+//                    employee.setName(updatedEmployee.getFirstName() + " " + updatedEmployee.getLastName());
+//                    employee.setRole(updatedEmployee.getRole());
+//                    employee.setId(updatedEmployee.getId());
+//                    return repository.save(employee);
+//                })
+//                .orElseGet(() -> {
+//                    updatedEmployee.setId(id);
+//                    return repository.save(updatedEmployee);
+//                });
+//    }
+
+    // ----------- after adopting new endpoint ----------------
+
+    //The Employee object built from the save() operation is then wrapped using the EmployeeModelAssembler into an EntityModel<Employee> object. Using the getRequiredLink() method, you can retrieve the Link created by the EmployeeModelAssembler with a SELF rel. This method returns a Link which must be turned into a URI with the toUri method.
+    //
+    //Since we want a more detailed HTTP response code than 200 OK, we will use Spring MVC’s ResponseEntity wrapper.
+    // It has a handy static method created() where we can plug in the resource’s URI.
+    // It’s debatable if HTTP 201 Created carries the right semantics since we aren’t necessarily "creating" a new resource.
+    // But it comes pre-loaded with a Location response header, so run with it.
     @PutMapping("/employees/{id}")
-    Employee updatedEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id) {
-        return repository.findById(id)
-                .map(employee -> {
-                    //setting employee name
-                    employee.setName(updatedEmployee.getFirstName() + " " + updatedEmployee.getLastName());
-                    employee.setRole(updatedEmployee.getRole());
-                    employee.setId(updatedEmployee.getId());
-                    return repository.save(employee);
-                })
-                .orElseGet(() -> {
-                    updatedEmployee.setId(id);
-                    return repository.save(updatedEmployee);
-                });
+    ResponseEntity<?> updatedEmployee(@RequestBody Employee employee, @PathVariable Long id) {
+        Employee updatedEmployee = repository.findById(id).map(employee1 -> {
+            employee1.setName(employee.getName());
+            employee1.setRole(employee.getRole());
+            return repository.save(employee1);
+        }).orElseGet(() -> {
+            // if not found crete one with id
+            employee.setId(id);
+            return repository.save(employee);
+        });
+        EntityModel<Employee> entityModel = assembler.toModel(updatedEmployee);
+        return ResponseEntity
+                .created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(entityModel);
     }
 
+//    @DeleteMapping("employees/{id}")
+//    void deletedEmployee(@PathVariable Long id) {
+//        repository.deleteById(id);
+//    }
+
+    // updating deleteMapping
     @DeleteMapping("employees/{id}")
-    void deletedEmployee(@PathVariable Long id) {
+    ResponseEntity<?> deletedEmployee(@RequestBody Employee deletedEmployee, @PathVariable Long id) {
         repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+        //This returns an HTTP 204 No Content response.
     }
 }
